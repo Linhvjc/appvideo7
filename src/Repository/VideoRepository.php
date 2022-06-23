@@ -6,6 +6,7 @@ use App\Entity\Video;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Knp\Component\Pager\PaginatorInterface;
+use Doctrine\Bundle\DoctrineBundle\Registry;
 
 /**
  * @method Video|null find($id, $lockMode = null, $lockVersion = null)
@@ -21,16 +22,56 @@ class VideoRepository extends ServiceEntityRepository
         $this->paginator = $paginator;
     }
 
-    public function findByChildIds(array $value, int $page)
+    public function findByChildIds(array $value, int $page, ?string $sort_method)
     {
+        $sort_method = $sort_method != 'rating' ? $sort_method : 'ASC'; // tmp
 
         $dbquery = $this->createQueryBuilder('v')
             ->andWhere('v.category IN (:val)')
             ->setParameter('val', $value)
+            ->orderBy('v.title', $sort_method)
             ->getQuery();
 
         $pagination = $this->paginator->paginate($dbquery, $page, 5);
         return $pagination;
+    }
+
+    public function findByTitle(string $query, int $page, ?string $sort_method)
+    {
+        $sort_method = $sort_method != 'rating' ? $sort_method : 'ASC'; // tmp
+
+        $querybuilder = $this->createQueryBuilder('v');
+        $searchTerms = $this->prepareQuery($query);
+
+        foreach ($searchTerms as $key => $term)
+        {
+            $querybuilder
+                ->orWhere('v.title LIKE :t_'.$key)
+                ->setParameter('t_'.$key, '%'.trim($term).'%');
+        }
+
+        $dbquery =  $querybuilder
+            ->orderBy('v.title', $sort_method)
+            ->getQuery();
+
+        return $this->paginator->paginate($dbquery, $page, 5);
+    }
+
+    public function videoDetails($id)
+    {
+        return $this->createQueryBuilder('v')
+            ->leftJoin('v.comments', 'c')
+            ->leftJoin('c.user', 'u')
+            ->addSelect('c', 'u')
+            ->where('v.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    private function prepareQuery(string $query): array
+    {
+        return explode(' ',$query);
     }
 
 //    /**
@@ -48,7 +89,7 @@ class VideoRepository extends ServiceEntityRepository
             ->getResult()
         ;
     }
-    */
+     */
 
     /*
     public function findOneBySomeField($value): ?Video
@@ -60,5 +101,6 @@ class VideoRepository extends ServiceEntityRepository
             ->getOneOrNullResult()
         ;
     }
-    */
+     */
 }
+
