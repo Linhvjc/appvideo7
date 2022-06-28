@@ -1,7 +1,13 @@
 {% extends 'base.html.twig' %}
 
-{% block main %}
+{% block customstylesheets %}
+    {{parent()}}
+    {% if app.user %}
+        <link rel="stylesheet" href="{{asset('assets/css/likes.css')}}">
+    {% endif %}
+{% endblock %}
 
+{% block main %}
 
     <main role="main">
 
@@ -24,6 +30,7 @@
                     </div>
 
                     {{ include('front/includes/_sort.html.twig') }}
+
                 </div>
             </div>
         </section>
@@ -31,4 +38,10 @@
         {{ include('front/includes/_videos.html.twig', {'videos' : videos}) }}
         {{ knp_pagination_render(videos) }}
     </main>
+{% endblock %}
+{% block customjavascripts %}
+    {{parent()}}
+    {% if app.user %}
+        <script src="{{asset('assets/js/likes.js')}}"></script>
+    {% endif %}
 {% endblock %}
